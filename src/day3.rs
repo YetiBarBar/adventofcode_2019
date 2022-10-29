@@ -27,12 +27,13 @@ impl FromStr for Cmd {
 }
 
 struct Line {
-    points: HashMap<usize, (isize, isize)>,
+    timed: HashMap<usize, (isize, isize)>,
+    points: HashSet<(isize, isize)>,
 }
 
 impl From<&Vec<Cmd>> for Line {
     fn from(point: &Vec<Cmd>) -> Self {
-        let points = point
+        let timed = point
             .iter()
             .fold(
                 (
@@ -75,17 +76,19 @@ impl From<&Vec<Cmd>> for Line {
                 },
             )
             .0;
-        Self { points }
+        Self {
+            points: timed.values().copied().collect(),
+            timed,
+        }
     }
 }
 
-fn common_point(line_a: &Line, line_b: &Line) -> Vec<(usize, (isize, isize))> {
-    let bvalues: Vec<_> = line_b.points.values().collect();
+fn common_point(line_a: &Line, line_b: &Line) -> Vec<(isize, isize)> {
     line_a
         .points
         .iter()
-        .filter(|(_, point)| bvalues.contains(point))
-        .map(|(a, (b, c))| (*a, (*b, *c)))
+        .filter(|point| line_b.points.contains(point))
+        .copied()
         .collect()
 }
 
@@ -104,11 +107,19 @@ fn main() {
 
     let cp = common_point(&line0, &line1);
 
-    let min = cp
+    // println!("Common points: {:?}", cp);
+
+    let min = cp.iter().map(|(x, y)| x.abs() + y.abs()).min().unwrap();
+    println!("Part 1: {}", min);
+
+    let min2 = cp
         .iter()
-        .map(|(_, (x, y))| x.abs() + y.abs())
+        .map(|point| {
+            line0.timed.iter().find(|&(_, val)| val == point).unwrap().0
+                + line1.timed.iter().find(|&(_, val)| val == point).unwrap().0
+        })
         .min()
         .unwrap();
 
-    println!("{}", min);
+    println!("Part 2: {}", min2);
 }
